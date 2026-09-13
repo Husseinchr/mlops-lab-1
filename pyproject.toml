@@ -7,7 +7,9 @@ authors = [
     { name = "MaxHusseinChreif", email = "h.chreif@maximo.com.sa" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "pillow>=12.3.0",
+]
 
 [project.scripts]
 mlops-lab-1 = "mlops_lab_1:main"
