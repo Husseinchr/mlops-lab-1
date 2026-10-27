@@ -2,14 +2,27 @@
 
 from __future__ import annotations
 
+import hashlib
 import shutil
 from collections import Counter
 from pathlib import Path
 
 from PIL import Image, ImageOps
 
-
 IMAGE_SIZE = (128, 128)
+CLASSES = [
+    "Bread",
+    "Dairy product",
+    "Dessert",
+    "Egg",
+    "Fried food",
+    "Meat",
+    "Noodles-Pasta",
+    "Rice",
+    "Seafood",
+    "Soup",
+    "Vegetable-Fruit",
+]
 MINI_IMAGES_PER_CLASS = 100
 SPLITS = ("training", "evaluation", "validation")
 CLASS_NAMES = {
@@ -42,12 +55,29 @@ def class_name_from_filename(image_path: Path) -> str:
         raise ValueError(f"Unknown class label in {image_path.name!r}") from error
 
 
-def resize_image(source: Path, destination: Path) -> None:
+def category_from_filename(filename: str) -> str:
+    """Map a numeric Food-11 filename prefix to its category."""
+    if "_" not in Path(filename).stem:
+        raise ValueError(f"Invalid Food-11 filename: {filename!r}")
+    return class_name_from_filename(Path(filename))
+
+
+def resize_image(img: Image.Image, size: int = 128) -> Image.Image:
+    """Return an independent square RGB image."""
+    if size < 1:
+        raise ValueError("Image size must be positive")
+    return (
+        ImageOps.exif_transpose(img)
+        .convert("RGB")
+        .resize((size, size), Image.Resampling.LANCZOS)
+    )
+
+
+def save_resized_image(source: Path, destination: Path) -> None:
     """Resize one image to 128x128 and save it as an RGB JPEG."""
     destination.parent.mkdir(parents=True, exist_ok=True)
     with Image.open(source) as image:
-        image = ImageOps.exif_transpose(image).convert("RGB")
-        image = image.resize(IMAGE_SIZE, Image.Resampling.LANCZOS)
+        image = resize_image(image)
         image.save(destination, format="JPEG", quality=90, optimize=True)
 
 
@@ -58,20 +88,27 @@ def reset_output_directories() -> None:
             shutil.rmtree(output_root)
 
 
-def prepare_split(split: str) -> tuple[int, int]:
+def prepare_split(split: str, seen: dict[str, str] | None = None) -> tuple[int, int]:
     """Prepare one split and return full and mini image counts."""
     raw_split = RAW_ROOT / split
     if not raw_split.is_dir():
         raise FileNotFoundError(f"Missing raw-data split: {raw_split}")
 
     mini_counts: Counter[str] = Counter()
+    if seen is None:
+        seen = {}
     processed_count = 0
     mini_count = 0
 
     for source in sorted(raw_split.glob("*.jpg")):
         class_name = class_name_from_filename(source)
         processed_destination = PROCESSED_ROOT / split / class_name / source.name
-        resize_image(source, processed_destination)
+        save_resized_image(source, processed_destination)
+        digest = hashlib.md5(processed_destination.read_bytes()).hexdigest()
+        if digest in seen and seen[digest] != split:
+            processed_destination.unlink()
+            continue
+        seen[digest] = split
         processed_count += 1
 
         if mini_counts[class_name] < MINI_IMAGES_PER_CLASS:
@@ -94,9 +131,10 @@ def main() -> None:
     reset_output_directories()
     total_processed = 0
     total_mini = 0
+    seen: dict[str, str] = {}
 
     for split in SPLITS:
-        processed_count, mini_count = prepare_split(split)
+        processed_count, mini_count = prepare_split(split, seen)
         total_processed += processed_count
         total_mini += mini_count
         print(f"{split}: {processed_count} processed, {mini_count} mini")
