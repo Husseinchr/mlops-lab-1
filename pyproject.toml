@@ -1,14 +1,21 @@
 [project]
 name = "mlops-lab-1"
 version = "0.1.0"
-description = "Add your description here"
+description = "Food-11 training, experiment tracking, and model serving"
 readme = "README.md"
 authors = [
     { name = "MaxHusseinChreif", email = "h.chreif@maximo.com.sa" }
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi>=0.162.0",
+    "mlflow>=3.17.2",
     "pillow>=12.3.0",
+    "python-multipart>=0.0.32",
+    "scikit-learn>=1.9.1",
+    "torch>=2.14.1",
+    "torchvision>=0.29.1",
+    "uvicorn>=0.54.0",
 ]
 
 [project.scripts]
@@ -17,3 +24,28 @@ mlops-lab-1 = "mlops_lab_1:main"
 [build-system]
 requires = ["uv_build>=0.12.13,<0.13.0"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = ["food11", "mlops_lab_1"]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+
+[tool.pytest.ini_options]
+pythonpath = [".", "src"]
+
+[tool.ruff]
+target-version = "py312"
+
+[dependency-groups]
+dev = [
+    "httpx",
+    "pytest",
+    "ruff",
+]

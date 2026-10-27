@@ -1,4 +1,14 @@
-# Lab 1 Answers — Git, DVC, and Data Preparation
+# MLOps Lab Answers and Execution Record
+
+Lab 1 answers are below. The other answers are organized by subject:
+
+- [Lab 1 verification and local storage choice](lab/lab1.md)
+- [Lab 2: training and MLflow, Questions 1–9](lab/lab2.md)
+- [Lab 3: registry and Docker, Questions 1–9](lab/lab3.md)
+- [Lab 4: Compose, Questions 1–11](lab/lab4.md)
+- [Lab 5: CI/CD, Questions 1–12](lab/lab5.md)
+
+## Lab 1
 
 ## Question 1
 
@@ -59,7 +69,7 @@ The GitHub `main` branch contains the Python code, DVC configuration, `.gitignor
 - `.dvc/config`, which identifies the DVC remote storage URL;
 - `data.dvc`, which identifies the exact dataset content by its hash.
 
-After `dvc push`, the actual data objects are stored in DagsHub. DagsHub can associate those objects with the Git-tracked DVC pointer and display the versioned dataset, while GitHub continues to store only the lightweight metadata.
+The original DagsHub upload encountered repeated connection timeouts, so its completeness and web visibility were not established. The updated subject permits a local remote; that recommended workaround was adopted. The complete data objects are backed up outside the repository in `../dvc-storage`. DagsHub would display the files if all objects were uploaded and associated with the Git pointer; this should not be confused with a confirmed observation. See `lab/lab1.md` for the exact local configuration.
 
 ## Question 7
 
@@ -92,10 +102,54 @@ The resulting counts are:
 | Validation | 3,430 | 3,430 | 1,096 |
 | **Total** | **16,643** | **16,643** | **3,292** |
 
-Every processed image was checked to have dimensions of exactly 128×128, and every mini class was checked to contain no more than 100 images.
+These are the original Lab 1 counts. Lab 5's leakage check subsequently found cross-split duplicates, so processed outputs were corrected while the raw files were preserved. The current full processed counts are 9,866 training, 3,098 evaluation and 3,068 validation (16,032 total). The mini counts remain 1,100, 1,096 and 1,096 (3,292 total). Both current datasets pass the class-folder, RGB/128×128, minimum-count, cross-split-hash and class-balance checks. The corrected DVC snapshot contains 35,967 files with hash `196ffd5fd3afbb295705e0d0893a9dc1.dir`.
 
 ## Question 8
 
 After checking out the earlier commit containing the raw-only `data.dvc` and running `dvc checkout`, the generated `food11_processed` and `food11_processed_mini` folders are no longer present. The raw folder remains because it belongs to that older dataset snapshot.
 
 After switching back to `main` and running `dvc checkout` again, DVC restores the complete current snapshot, including both processed folders. This demonstrates that Git selects the version of the DVC pointer, while DVC materializes the matching version of the data.
+
+## Execution record — 27 October 2026
+
+### Data verification
+
+The course-approved local remote successfully received all original historical data objects (`32,035 files pushed`, with content deduplication). The corrected dataset manifest was then pushed (`1 file pushed`). Both complete and mini processed datasets passed all five contract checks. Injecting a training Bread image into evaluation caused `FAIL duplicates` and exit code 1; removing it restored a passing contract.
+
+An isolated clean clone initially reported `DATA_BEFORE_PULL=False`; pulling created all 36,578 original files. The historical raw-only manifest was fetched once, then the old commit reported `RAW_ONLY_PROCESSED=False` and `RAW_FILES=16643`. Returning to `main` and running `dvc checkout` reported `MAIN_PROCESSED=True`. This closes the previously unverified Lab 1 recovery exercises. The temporary clone does not share the main repository's DVC cache.
+
+Ruff lint and formatting checks pass on source, tests, frontend and experiment scripts. All Python source files also passed syntax parsing; runtime tests are recorded separately below.
+
+### Environment and verification boundaries
+
+Docker Desktop passed `docker run --rm hello-world`. Local build downloads require the machine's Windows-trusted HTTPS inspection CA; it is supplied only as an optional BuildKit secret and is not committed or copied into runtime images. Normal CI builds use the standard public CA store.
+
+The current GitHub credential has repository push access but no administrator or maintain permission. Setting branch protection requires the repository owner/administrator. Live CI results, image measurements, experiment metrics, and promotion decisions are recorded only after those operations complete.
+
+### Paused checkpoint — at the user's request
+
+Active package downloads and Docker builds were stopped. No lab containers or uv/DVC processes remained running at the checkpoint. Docker Desktop itself remains available.
+
+Completed and verified:
+
+- Lab 1's original clean-clone pull and historical checkout exercises passed using the local remote. The corrected dataset passed both full and mini contracts, including an intentional failure test.
+- Commit `97299fc` records the Lab 1 audit, deduplication, updated pointer and storage choice. It is local and has not been pushed.
+- Nine data unit tests passed in an isolated pytest/Pillow environment. Ruff lint, formatting and Python syntax checks passed. Compose configuration parsed successfully.
+- The official ResNet18 checkpoint is fully downloaded in the ignored local verification directory and its SHA-256 matches `f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec`.
+
+Implemented but still awaiting execution:
+
+- Training, shared preprocessing/probability adapter, registry helper, inference API, quality gate, data validator, frontend, Dockerfiles, Compose, CI workflow, tests and per-lab answers. These changes remain saved in the working tree and have not been committed or pushed.
+- Dependency installation was interrupted. Reconcile `pyproject.toml`/`uv.lock`, finish installing dependencies with Windows system certificates, then run the complete test suite. The isolated dependency-resolution directory is `.verification/lock-project`; do not overwrite the main manifest from it without comparing the current files.
+- Continue builds with the ignored `.verification/build.yml` override, which supplies the Windows-trusted public inspection CA as an optional build secret. Certificate verification remains enabled. Standard CI does not need this machine-specific override.
+- Start the Compose MLflow service, execute the four Lab 2 settings plus two Lab 5 candidates with `scripts/run_experiments.py`, and record measured metrics/run IDs and gate decisions.
+- Verify real local/container predictions, image sizes, alias reload, and persistence. A disposable persistence-project override and a naive-image comparison Dockerfile are prepared under `.verification/`.
+- Commit/push the remaining work, inspect hosted Actions, exercise a failing/fixed PR, and verify GHCR publishing. Branch protection requires administrator access, which the current credential lacks.
+
+The temporary Lab 1 recovery clone is under `.verification/lab1-clone`; remove it after resuming verification. Large package downloads already completed are retained in uv's cache. No training results, hosted CI timings, image sizes or registry outcomes are claimed yet.
+
+### Resumed verification
+
+Work resumed on 27 October 2026. The dependency lock now includes pytest, Ruff and httpx. Docker dependency installation uses uv with a persistent BuildKit cache, preserving completed downloads across interruptions. Lint, formatting and Compose configuration checks pass on the resumed source tree.
+
+Automatic approval review blocked a direct push to `main`; that rejected command made no commit or remote change. Hosted Actions/PR/GHCR exercises therefore remain pending explicit publishing approval, in addition to the separate administrator requirement for branch protection. Local testing, training and Docker verification can proceed independently.
