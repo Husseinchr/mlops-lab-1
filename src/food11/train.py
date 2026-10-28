@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import os
 import random
+import sys
 import tempfile
 from pathlib import Path
 
@@ -35,6 +36,9 @@ def evaluate(model, loader, criterion):
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", choices=["processed", "mini"], default="mini")
     parser.add_argument("--epochs", type=int, default=5)
@@ -57,6 +61,7 @@ def main():
     root = DATA_ROOT / (
         "food11_processed_mini" if args.dataset == "mini" else "food11_processed"
     )
+    print(f"Validating {root}", flush=True)
     checks, _, details = validate_dataset(root)
     if not all(checks.values()):
         raise ValueError(f"Dataset contract failed: {checks}; {details[:3]}")
@@ -99,6 +104,7 @@ def main():
         / f"features-{dataset_hash}-{torch.__version__}-v1.pt"
     )
     if cache.exists():
+        print("Using cached frozen ResNet18 features", flush=True)
         features = torch.load(cache, weights_only=True)
     else:
         head = model.fc
@@ -107,6 +113,7 @@ def main():
         features = {}
         with torch.inference_mode():
             for split, dataset in datasets.items():
+                print(f"Extracting {split}: {len(dataset)} images", flush=True)
                 batches, targets = [], []
                 for images, labels in DataLoader(dataset, batch_size=args.batch_size):
                     batches.append(model(images).clone())
@@ -171,17 +178,22 @@ def main():
         model.eval().cpu()
         # Keep the required PyTorch artifact and register a pyfunc adapter that
         # converts network logits to probabilities in canonical class order.
-        mlflow.pytorch.log_model(model, artifact_path="model")
+        example = np.zeros((1, 3, 128, 128), dtype=np.float32)
+        mlflow.pytorch.log_model(
+            model, name="model", serialization_format="pickle", input_example=example
+        )
         with tempfile.TemporaryDirectory() as directory:
             network_path = str(Path(directory) / "network")
-            mlflow.pytorch.save_model(model, network_path)
-            example = np.zeros((1, 3, 128, 128), dtype=np.float32)
+            mlflow.pytorch.save_model(
+                model, network_path, serialization_format="pickle"
+            )
             mlflow.pyfunc.log_model(
-                artifact_path="classifier",
+                name="classifier",
                 python_model=ProbabilityModel(),
                 artifacts={"network": network_path},
                 code_paths=[str(Path(__file__).parent)],
                 signature=infer_signature(example, np.zeros((1, 11), dtype=np.float32)),
+                input_example=example,
                 pip_requirements=[
                     f"torch=={torch.__version__.split('+')[0]}",
                     f"mlflow=={mlflow.__version__}",

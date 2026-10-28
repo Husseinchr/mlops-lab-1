@@ -28,6 +28,19 @@ Each run records a PyTorch `model` artifact and a `classifier` pyfunc adapter. T
 
 ## 7–9. Comparison and best run
 
-Measured runs, the selected run ID, and the relationship between learning rate, batch size, and accuracy are recorded in the experiment results section of `lab-answers.md` after execution. Higher learning rate is not inherently better: it can converge faster but overshoot; too small a rate may underfit within five epochs. Accuracy is maximized, while loss is minimized. Model selection uses validation accuracy, with evaluation accuracy reported separately.
+The four completed five-epoch runs produced:
+
+| Learning rate | Batch size | Final validation accuracy | Evaluation accuracy |
+|---|---:|---:|---:|
+| 0.01 | 32 | 65.42% | 68.34% |
+| 0.001 | 32 | **68.43%** | **72.81%** |
+| 0.0001 | 32 | 39.78% | 40.78% |
+| 0.001 | 64 | 67.06% | 70.16% |
+
+For Question 7, learning rate **0.001** gave the best final `val_accuracy`. Increasing it to 0.01 reduced final accuracy; its validation accuracy peaked at epoch 3 and then fell while training loss continued to improve. Decreasing it to 0.0001 learned too slowly in the allotted five epochs.
+
+For Question 8, at learning rate 0.001, batch size 32 outperformed 64 by 1.37 validation percentage points. With fixed epochs, larger batches make fewer optimizer updates. These four seeded runs suggest a pattern for this setup, not a general law that smaller batches always win.
+
+For Question 9, the selected run ID is **`0a9fcf208f4949548e03aacafc43aa65`**. It was selected by final validation accuracy; evaluation accuracy was reported separately on 1,096 held-out images. One earlier setup run failed during model serialization and is excluded from this completed-run comparison.
 
 The frozen pretrained ResNet18 backbone is evaluated once per dataset content hash; cached features are reused across runs. Only the final eleven-class layer is trained. This is transfer learning, makes the CPU experiment practical, and preserves the full network for inference. Dataset content hashes and test sizes are logged to prevent comparisons across different data snapshots.

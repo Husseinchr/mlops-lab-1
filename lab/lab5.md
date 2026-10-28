@@ -38,7 +38,16 @@ A required-check rule blocks merging a pull request until test and smoke pass; r
 
 ## 10. Quality gate
 
-The candidate becomes champion only if `candidate >= champion + 2*sqrt(p*(1-p)/n)`. Otherwise it receives `challenger`. Tags record both accuracies, the previous champion version, sample size, margin and decision. The script verifies matching dataset hashes and test sizes before comparing. Exact candidate results are recorded after execution in `lab-answers.md`.
+The candidate becomes champion only if `candidate >= champion + 2*sqrt(p*(1-p)/n)`. Otherwise it receives `challenger`. Tags record both accuracies, the previous champion version, sample size, margin and decision. The script verifies matching dataset hashes and test sizes before comparing.
+
+The champion's evaluation accuracy was `p = 0.7281021897810219` on `n = 1096` images. Therefore `se = 0.013439829106148112`, and `2*se = 0.026879658212296223`, or **2.688 percentage points**. The replacement threshold was **75.4982%**.
+
+| Candidate version | Learning rate | Evaluation accuracy | Gate decision |
+|---|---|---:|---|
+| 2 | 0.000001 | 11.5876% | challenger |
+| 3 | 0.001 | 72.8102% | challenger |
+
+Both decisions retained champion version 1. The strong candidate reproduced the champion's accuracy exactly, so it did not meet the required improvement. The `challenger` alias ends on version 3, while version 2 retains its recorded decision tags.
 
 This is the prescribed lecture heuristic, not a general significance test for two classifiers evaluated on the same examples; a paired test would use their per-example disagreement.
 

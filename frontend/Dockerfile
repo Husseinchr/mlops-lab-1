@@ -9,7 +9,7 @@ RUN --mount=type=secret,id=build_ca \
       cat /etc/ssl/certs/ca-certificates.crt /run/secrets/build_ca > /tmp/build-ca.pem; \
       export SSL_CERT_FILE=/tmp/build-ca.pem; \
     fi; \
-    uv pip install --system -r requirements.txt && rm -f /tmp/build-ca.pem
+    UV_LOCK_TIMEOUT=3600 uv pip install --system -r requirements.txt && rm -f /tmp/build-ca.pem
 COPY app.py .
 EXPOSE 8501
 CMD ["streamlit", "run", "app.py", "--server.address=0.0.0.0"]

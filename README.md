@@ -56,6 +56,10 @@ Run all four comparison settings and both promotion candidates:
 uv run python scripts/run_experiments.py
 ```
 
+For the course sequence, use `--phase compare` first, complete the serving and
+Compose exercises, then use `--phase promote` for the two quality-gate candidates.
+The comparison report is saved locally between phases.
+
 Register an individual run and initialize its serving alias:
 
 ```powershell
@@ -74,6 +78,17 @@ uv run uvicorn src.food11.serve:app --host 127.0.0.1 --port 8000
 docker compose up --build -d
 docker compose ps
 ```
+
+On this workstation, HTTPS inspection requires a trusted build CA. The ignored
+local override supplies it as an optional BuildKit secret:
+
+```powershell
+docker compose -f docker-compose.yml -f .verification/build.yml build
+docker compose up -d --no-build
+```
+
+Normal CI builds need no local override. The CA is never copied into the runtime
+image, and TLS verification stays enabled.
 
 Open http://127.0.0.1:8501 to upload an image. The frontend calls inference inside
 the Compose network; inference has no published host port. `GET /health` reports

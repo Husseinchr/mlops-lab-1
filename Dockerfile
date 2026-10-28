@@ -8,7 +8,7 @@ RUN --mount=type=secret,id=build_ca --mount=type=cache,target=/root/.cache/uv \
       cat /etc/ssl/certs/ca-certificates.crt /run/secrets/build_ca > /tmp/build-ca.pem; \
       export SSL_CERT_FILE=/tmp/build-ca.pem; \
     fi; \
-    uv sync --frozen --no-dev --no-install-project && rm -f /tmp/build-ca.pem
+    UV_LOCK_TIMEOUT=3600 uv sync --frozen --no-dev --no-install-project && rm -f /tmp/build-ca.pem
 
 FROM python:3.12-slim AS runtime
 WORKDIR /app

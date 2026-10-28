@@ -110,46 +110,58 @@ After checking out the earlier commit containing the raw-only `data.dvc` and run
 
 After switching back to `main` and running `dvc checkout` again, DVC restores the complete current snapshot, including both processed folders. This demonstrates that Git selects the version of the DVC pointer, while DVC materializes the matching version of the data.
 
-## Execution record — 27 October 2026
+## Execution record — 27–28 October 2026
 
-### Data verification
+### Lab 1: verified data recovery
 
-The course-approved local remote successfully received all original historical data objects (`32,035 files pushed`, with content deduplication). The corrected dataset manifest was then pushed (`1 file pushed`). Both complete and mini processed datasets passed all five contract checks. Injecting a training Bread image into evaluation caused `FAIL duplicates` and exit code 1; removing it restored a passing contract.
+The course-approved local remote `../dvc-storage` received all historical objects (`32,035 files pushed`, with content deduplication), followed by the corrected directory manifest. An independent clean clone started without `data/`, pulled all 36,578 original files, and successfully restored both historical snapshots. The raw-only commit retained 16,643 raw images and removed the processed folders; returning to `main` restored them. Its historical directory manifest had to be fetched once before checkout. The temporary verification clone was removed afterward.
 
-An isolated clean clone initially reported `DATA_BEFORE_PULL=False`; pulling created all 36,578 original files. The historical raw-only manifest was fetched once, then the old commit reported `RAW_ONLY_PROCESSED=False` and `RAW_FILES=16643`. Returning to `main` and running `dvc checkout` reported `MAIN_PROCESSED=True`. This closes the previously unverified Lab 1 recovery exercises. The temporary clone does not share the main repository's DVC cache.
+Both corrected processed datasets pass all five data-contract checks. Injecting a training Bread image into evaluation produced `FAIL duplicates` and exit code 1; removing the diagnostic copy restored a passing contract.
 
-Ruff lint and formatting checks pass on source, tests, frontend and experiment scripts. All Python source files also passed syntax parsing; runtime tests are recorded separately below.
+### Lab 2: measured experiments
 
-### Environment and verification boundaries
+All comparison runs used the mini dataset, five epochs, seed 42, a frozen pretrained ResNet18 backbone and the same data content hash. Model selection used final validation accuracy.
 
-Docker Desktop passed `docker run --rm hello-world`. Local build downloads require the machine's Windows-trusted HTTPS inspection CA; it is supplied only as an optional BuildKit secret and is not committed or copied into runtime images. Normal CI builds use the standard public CA store.
+| Run ID | Learning rate | Batch | Validation accuracy | Evaluation accuracy |
+|---|---|---:|---:|---:|
+| `5ce40686ab604850bd93c076537b2505` | 0.01 | 32 | 65.42% | 68.34% |
+| `0a9fcf208f4949548e03aacafc43aa65` | 0.001 | 32 | **68.43%** | **72.81%** |
+| `380436e47d0746728251df352ff6def2` | 0.0001 | 32 | 39.78% | 40.78% |
+| `05ad13ee7763485784224bf84d6f7879` | 0.001 | 64 | 67.06% | 70.16% |
 
-The current GitHub credential has repository push access but no administrator or maintain permission. Setting branch protection requires the repository owner/administrator. Live CI results, image measurements, experiment metrics, and promotion decisions are recorded only after those operations complete.
+The selected run is `0a9fcf208f4949548e03aacafc43aa65`. The evaluation split contains 1,096 images. An initial setup run failed during serialization and was excluded from the completed-run comparison. The installed MLflow version requires an explicit serialization choice; the code uses the supported PyTorch module format, provides model input examples and uses UTF-8 console output on Windows.
 
-### Paused checkpoint — at the user's request
+### Lab 3: local inference verified
 
-Active package downloads and Docker builds were stopped. No lab containers or uv/DVC processes remained running at the checkpoint. Docker Desktop itself remains available.
+The selected probability adapter was registered as `food11` version 1 and assigned the `champion` alias. The real API passed health (HTTP 200), a multipart image prediction (Bread, confidence `0.9152076840400696`) and invalid-content rejection (HTTP 400). Containers fetch the model at startup through MLflow's artifact proxy; they do not embed trained weights in the image.
 
-Completed and verified:
+Docker Desktop passed `hello-world`, and Compose configuration validation passed. The actual Linux API passed model-free smoke health (HTTP 200), a real Bread prediction (confidence `0.9152076244354248`), invalid-content rejection (HTTP 400), and recreation from the same image without rebuilding. The multi-stage image measured 1,783,322,569 bytes versus 1,839,700,717 bytes for the matching single-stage image: 56.38 MB smaller, approximately 3.06%. The 1.66 GB dependency layer dominated both.
 
-- Lab 1's original clean-clone pull and historical checkout exercises passed using the local remote. The corrected dataset passed both full and mini contracts, including an intentional failure test.
-- Commit `97299fc` records the Lab 1 audit, deduplication, updated pointer and storage choice. It is local and has not been pushed.
-- Nine data unit tests passed in an isolated pytest/Pillow environment. Ruff lint, formatting and Python syntax checks passed. Compose configuration parsed successfully.
-- The official ResNet18 checkpoint is fully downloaded in the ignored local verification directory and its SHA-256 matches `f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec`.
+### Lab 4: orchestration and persistence verified
 
-Implemented but still awaiting execution:
+The host server was stopped before its database and proxied artifacts were copied into the verified-empty Docker volume. The complete stack started successfully. The frontend container reached inference by service DNS and received the real Bread prediction. MLflow and frontend published only localhost ports 5000 and 8501; inference remained internal on port 8000. Both the MLflow UI route and Streamlit health route returned HTTP 200.
 
-- Training, shared preprocessing/probability adapter, registry helper, inference API, quality gate, data validator, frontend, Dockerfiles, Compose, CI workflow, tests and per-lab answers. These changes remain saved in the working tree and have not been committed or pushed.
-- Dependency installation was interrupted. Reconcile `pyproject.toml`/`uv.lock`, finish installing dependencies with Windows system certificates, then run the complete test suite. The isolated dependency-resolution directory is `.verification/lock-project`; do not overwrite the main manifest from it without comparing the current files.
-- Continue builds with the ignored `.verification/build.yml` override, which supplies the Windows-trusted public inspection CA as an optional build secret. Certificate verification remains enabled. Standard CI does not need this machine-specific override.
-- Start the Compose MLflow service, execute the four Lab 2 settings plus two Lab 5 candidates with `scripts/run_experiments.py`, and record measured metrics/run IDs and gate decisions.
-- Verify real local/container predictions, image sizes, alias reload, and persistence. A disposable persistence-project override and a naive-image comparison Dockerfile are prepared under `.verification/`.
-- Commit/push the remaining work, inspect hosted Actions, exercise a failing/fixed PR, and verify GHCR publishing. Branch protection requires administrator access, which the current credential lacks.
+Temporarily assigning weak version 2 to `champion` did not change the already loaded Bread prediction. Restarting inference changed the prediction to Soup (confidence `0.4367423951625824`) without changing the image. Restoring champion 1 and restarting returned the original Bread prediction. A complete ordinary `down`/`up` preserved the real model, aliases, run metrics and working prediction.
 
-The temporary Lab 1 recovery clone is under `.verification/lab1-clone`; remove it after resuming verification. Large package downloads already completed are retained in uv's cache. No training results, hosted CI timings, image sizes or registry outcomes are claimed yet.
+An independent disposable project confirmed that a named volume preserved a registry alias and downloadable artifact across `down`/`up`, while `down -v` reset its store. A standalone unmounted container lost its marker experiment after removal/recreation. The disposable containers, volume and network were removed; the trained volume was preserved.
 
-### Resumed verification
+Browser visual/upload interaction was not verified because Windows app access timed out awaiting approval. The frontend's container-to-API multipart prediction and HTTP availability were verified separately.
 
-Work resumed on 27 October 2026. The dependency lock now includes pytest, Ruff and httpx. Docker dependency installation uses uv with a persistent BuildKit cache, preserving completed downloads across interruptions. Lint, formatting and Compose configuration checks pass on the resumed source tree.
+### Lab 5: tests and promotion gate verified locally
 
-Automatic approval review blocked a direct push to `main`; that rejected command made no commit or remote change. Hosted Actions/PR/GHCR exercises therefore remain pending explicit publishing approval, in addition to the separate administrator requirement for branch protection. Local testing, training and Docker verification can proceed independently.
+The final frozen-lockfile, Ruff lint, formatting, workflow YAML/dependency-graph, and diff checks pass. The complete suite passed **16 tests in 27.65 seconds**, including API error paths, data leakage detection and both accepted/rejected registry-gate behavior. The mini data contract passes all five checks, and `dvc status data.dvc` reports the workspace up to date. Two non-failing upstream warnings remain: Starlette's httpx deprecation and MLflow's optional PythonModel type-hint guidance.
+
+The champion had evaluation accuracy `0.7281021897810219` on 1,096 images. The gate's `2*se` margin was `0.026879658212296223` (2.688 percentage points), giving a replacement threshold of 75.4982%.
+
+| Version | Run ID | Candidate accuracy | Decision |
+|---|---|---:|---|
+| 2 | `05023725a4ac4f8b85a6f689f3a2f7f9` | 11.5876% | challenger |
+| 3 | `431ec55aafd44f33bc4d2ed3146e173e` | 72.8102% | challenger |
+
+Champion version 1 was retained. Both candidate versions have decision, accuracy, sample-size and margin tags; the mutable `challenger` alias now points to version 3.
+
+The workflow is implemented but hosted Actions timings, the intentionally failing/fixed PR, and GHCR publication have not yet been executed. Publishing the local commits is pending approval. The available GitHub account has push access but no repository-administrator permission, so the owner must configure required `test` and `smoke` checks and the pull-request rule for `main`.
+
+### Reproducibility notes
+
+Python dependencies are locked in `uv.lock` with CPU-only PyTorch wheels. The official pretrained checkpoint was verified against SHA-256 `f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec`. Package and model caches, MLflow records and credentials remain outside Git. This machine's HTTPS inspection CA is supplied only as an optional Docker build secret; verification remains enabled, and the CA is absent from committed files and runtime images.
