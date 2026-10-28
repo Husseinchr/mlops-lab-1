@@ -22,7 +22,18 @@ With `needs: test`, a failing test job prevents smoke from running. Without it, 
 
 ## 6. Cold and cached run timing
 
-Measured GitHub Actions timings belong in the execution record. setup-uv caches downloaded dependency artifacts; subsequent `uv sync --frozen` installations can reuse them. A cache does not remove the need to check out code, create the environment and run tests. Docker publishing separately uses a GitHub Actions build cache.
+The first main run ([40628472907](https://github.com/Husseinchr/mlops-lab-1/actions/runs/40628472907)) and the required empty-commit repeat, commit `10be507` with message `ci` ([40629150663](https://github.com/Husseinchr/mlops-lab-1/actions/runs/40629150663)), both passed on 28 October 2026.
+
+| Measurement | First run | Repeat |
+|---|---:|---:|
+| Whole workflow, creation to completion | 369 s | 190 s |
+| Test job | 23 s | 25 s |
+| `uv sync --frozen` | 5 s | 5 s |
+| Pytest | 13 s | 14 s |
+| Smoke Docker build | 96 s | 121 s |
+| Publishing build/push step | 195 s | 4 s |
+
+The publishing step reused the GitHub Actions Docker cache and existing registry layers, reducing its time substantially. Dependency installation did not show a measurable improvement here; tests still ran, and the smoke build on its separate runner was slower. Cache availability does not guarantee every step becomes faster. setup-uv caches dependency artifacts, while the publishing job separately imports and exports its Docker build cache.
 
 ## 7. SHA tags
 
@@ -36,7 +47,7 @@ The test and smoke jobs need only repository read access. Only the publishing jo
 
 A required-check rule blocks merging a pull request until test and smoke pass; requiring a pull request prevents ordinary direct pushes. Enforcement is centralized and repeatable rather than depending on each developer remembering to run local tests. Administrators may bypass rules if the rule permits it. The execution record states whether the rule and deliberately failing PR were actually verified.
 
-In [PR #1](https://github.com/Husseinchr/mlops-lab-1/pull/1), the class-count test was deliberately changed from eleven to twelve. The hosted `test` job failed, and `smoke` was skipped. The assertion was then restored. The repository reports `main.protected = false`; GitHub reported the failed PR as mergeable with an unstable status. Therefore CI detection worked, but merge blocking is **not enforced** until the owner enables protection. The current account has push permission but no administrator permission.
+In [PR #1](https://github.com/Husseinchr/mlops-lab-1/pull/1), the class-count test was deliberately changed from eleven to twelve. The hosted `test` job failed with `assert 11 == 12`, and `smoke` was skipped ([failed run](https://github.com/Husseinchr/mlops-lab-1/actions/runs/40628663654)). Restoring the assertion produced passing test and smoke jobs ([fixed run](https://github.com/Husseinchr/mlops-lab-1/actions/runs/40628864023)); only then was the PR merged as `4330e06`. The repository reports `main.protected = false`; GitHub reported the failed PR as mergeable with an unstable status. Therefore CI detection worked, but merge blocking is **not enforced** until the owner enables protection. The current account has push permission but no administrator permission.
 
 ## 10. Quality gate
 

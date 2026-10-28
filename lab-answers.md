@@ -160,7 +160,11 @@ The champion had evaluation accuracy `0.7281021897810219` on 1,096 images. The g
 
 Champion version 1 was retained. Both candidate versions have decision, accuracy, sample-size and margin tags; the mutable `challenger` alias now points to version 3.
 
-The workflow is implemented but hosted Actions timings, the intentionally failing/fixed PR, and GHCR publication have not yet been executed. Publishing the local commits is pending approval. The available GitHub account has push access but no repository-administrator permission, so the owner must configure required `test` and `smoke` checks and the pull-request rule for `main`.
+The published main revision `42e4f9e31f1f79753b844a8bedbf71267b14e89a` passed all three hosted jobs, including GHCR publication ([first run](https://github.com/Husseinchr/mlops-lab-1/actions/runs/40628472907)). Its image tag is `ghcr.io/husseinchr/mlops-lab-1:42e4f9e31f1f79753b844a8bedbf71267b14e89a`. The required empty commit `10be507` (`ci`) also passed ([repeat run](https://github.com/Husseinchr/mlops-lab-1/actions/runs/40629150663)). Overall workflow time decreased from 369 to 190 seconds; the cached publishing build/push step decreased from 195 to 4 seconds. Dependency installation remained 5 seconds. Full measurements appear in Lab 5, Question 6.
+
+[PR #1](https://github.com/Husseinchr/mlops-lab-1/pull/1) deliberately changed the eleven-class assertion to twelve. Its [failed run](https://github.com/Husseinchr/mlops-lab-1/actions/runs/40628663654) showed one failed and fifteen passed tests and skipped smoke. Restoring the correct assertion made [both required jobs pass](https://github.com/Husseinchr/mlops-lab-1/actions/runs/40628864023); the repaired PR was then merged as `4330e06`. No intentional regression remains in the final source.
+
+Branch protection remains an owner action: `main.protected = false`, and the authenticated account has push access but no administrator permission. The failed PR was mergeable with an unstable status, so CI failure was detected but automatic merge blocking was not demonstrated. The owner must require pull requests and successful `test` and `smoke` checks for `main`.
 
 ### Reproducibility notes
 
