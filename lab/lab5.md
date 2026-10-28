@@ -36,6 +36,8 @@ The test and smoke jobs need only repository read access. Only the publishing jo
 
 A required-check rule blocks merging a pull request until test and smoke pass; requiring a pull request prevents ordinary direct pushes. Enforcement is centralized and repeatable rather than depending on each developer remembering to run local tests. Administrators may bypass rules if the rule permits it. The execution record states whether the rule and deliberately failing PR were actually verified.
 
+In [PR #1](https://github.com/Husseinchr/mlops-lab-1/pull/1), the class-count test was deliberately changed from eleven to twelve. The hosted `test` job failed, and `smoke` was skipped. The assertion was then restored. The repository reports `main.protected = false`; GitHub reported the failed PR as mergeable with an unstable status. Therefore CI detection worked, but merge blocking is **not enforced** until the owner enables protection. The current account has push permission but no administrator permission.
+
 ## 10. Quality gate
 
 The candidate becomes champion only if `candidate >= champion + 2*sqrt(p*(1-p)/n)`. Otherwise it receives `challenger`. Tags record both accuracies, the previous champion version, sample size, margin and decision. The script verifies matching dataset hashes and test sizes before comparing.

@@ -27,4 +27,4 @@ def test_resize():
 
 
 def test_classes():
-    assert len(CLASSES) == len(set(CLASSES)) == 12
+    assert len(CLASSES) == len(set(CLASSES)) == 11
